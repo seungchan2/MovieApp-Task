@@ -225,7 +225,7 @@ func fetchMoviesWithTaskGroup() {
 ## Task, TaskGroup, Async-let 메모리 및 이미지 다운로드 시간 비교
 > 먼저 `CFAbsoluteTimeGetCurrent`를 사용해서 각 메소드 별 얼마나 걸리는 지 확인해보았다.
 
-> 결과를 확인하기 전, TaskGroup Task Async-let 순으로 시간이 빠를 것으로 생각했다.
+> 결과를 확인하기 전, `TaskGroup` `Task` `Async-let` 순으로 시간이 빠를 것으로 생각했다.
 ```swift
 /// Task
 이미지 다운로드 시간: 0.96초
@@ -239,27 +239,26 @@ API 요청 시간: 0.35초
 API 요청 시간: 0.38초
 전체 작업 시간(async-let): 0.45초
 ```
-- 하지만 결과에서는 TaskGroup Async-let Task 순서인 것을 확인할 수 있었다.
-- TaskGroup은 병렬 처리가 되고 있어 Task 생성과 실행 오버헤드가 최소화 되므로 가장 빠름을 보장한다. (해당 프로젝트 내에서는)
+- 하지만 결과에서는 `TaskGroup` `Async-let` `Task` 순서인 것을 확인할 수 있었다.
+- `TaskGroup`은 병렬 처리가 되고 있어 `Task` 생성과 실행 오버헤드가 최소화 되므로 가장 빠름을 보장한다. (해당 프로젝트 내에서는)
 
-> 그렇다면 async-let이 Task보다 빠르게 작업을 처리하는 이유는 뭘까?
+> 그렇다면 `async-let`이 `Task`보다 빠르게 작업을 처리하는 이유는 뭘까?
 ```swift
 let moviesWithImages = try await response.results.map { movie in
-    // 이미지 로드가 시작되고
     async let posterImage: UIImage? = {
         if let posterPath = movie.posterPath {
             return try? await networkService.fetchImage(from: Constants.imageBaseURL + posterPath)
         }
         return nil
     }()
-    
-    // 바로 다음 이미지 로드도 시작됨
-    // 완전한 순차적 실행은 아님
 }
 ```
-- async-let
+- `async-let`은 이미지 로드가 시작되고, 바로 다음 이미지 로드도 시작된다.
 
+- Task는 매번 새로운 Task를 생성함으로써 오버헤드가 발생하고, for 루프 내 순차적인 대기가 발생한다.
+- `async-let` 또한 순차적인 작업을 하고 있지만, **async-let의 순차적인 작업 >>> Task** 매번 생성보다 오버헤드가 적기 때문에 시간 차이가 발생하는 것 같다.
 
+  
 
 
 
